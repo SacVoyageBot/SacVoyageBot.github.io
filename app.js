@@ -1,48 +1,60 @@
 let tg = window.Telegram.WebApp;
-tg.expand();
-
-// Данные экскурсии
-const tourData = {
-    title: "Исторический центр города",
-    character: {
-        name: "Иван-путеводитель",
-        image: "character.png"
-    },
-    slides: [
-        {
-            image: "slide1.jpg",
-            caption: "Главная площадь города",
-            text: "Добро пожаловать на нашу экскурсию! Перед вами главная площадь нашего города, которая была основана в 18 веке. Здесь происходили важнейшие исторические события.",
-            audio: "audio/slide1.mp3"
-        },
-        {
-            image: "slide2.jpg", 
-            caption: "Старинный собор",
-            text: "Обратите внимание на этот великолепный собор. Он был построен в 1754 году и является прекрасным образцом барокко. Высота колокольни составляет 65 метров!",
-            audio: "audio/slide2.mp3"
-        },
-        {
-            image: "slide3.jpg",
-            caption: "Городская набережная",
-            text: "А вот и наша прекрасная набережная. Здесь любят гулять как местные жители, так и туристы. Особенно красиво здесь вечером, когда зажигаются огни.",
-            audio: "audio/slide3.mp3"
-        }
-        // Добавьте больше слайдов по необходимости
-    ]
-};
-
 let currentSlide = 0;
 let speechSynthesis = null;
 let isPlaying = false;
 
+// Упрощенные данные для тестирования (без внешних файлов)
+const tourData = {
+    title: "Тестовая экскурсия",
+    character: {
+        name: "Гид-экскурсовод",
+        image: "https://via.placeholder.com/150/0088cc/ffffff?text=Гид"
+    },
+    slides: [
+        {
+            image: "https://via.placeholder.com/800x400/ff6b6b/ffffff?text=Площадь+города",
+            caption: "Главная площадь",
+            text: "Добро пожаловать на нашу экскурсию! Это главная площадь нашего города.",
+            audio: ""
+        },
+        {
+            image: "https://via.placeholder.com/800x400/4ecdc4/ffffff?text=Исторический+собор", 
+            caption: "Старинный собор",
+            text: "Перед вами великолепный собор, построенный в 18 веке в стиле барокко.",
+            audio: ""
+        },
+        {
+            image: "https://via.placeholder.com/800x400/45b7d1/ffffff?text=Городская+набережная",
+            caption: "Речная набережная",
+            text: "А это наша красивая набережная, где любят гулять жители и гости города.",
+            audio: ""
+        }
+    ]
+};
+
 // Инициализация приложения
 function initApp() {
-    tg.ready();
-    showSlide(0);
-    setupSpeechSynthesis();
+    console.log('Инициализация приложения...');
     
-    // Скрываем индикатор загрузки
-    document.getElementById('loading').classList.add('hidden');
+    // Показываем индикатор загрузки
+    document.getElementById('loading').classList.remove('hidden');
+    
+    // Инициализируем Telegram Web App
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        console.log('Telegram Web App инициализирован');
+    }
+    
+    // Загружаем первый слайд
+    setTimeout(() => {
+        showSlide(0);
+        setupSpeechSynthesis();
+        
+        // Скрываем индикатор загрузки
+        document.getElementById('loading').classList.add('hidden');
+        console.log('Приложение загружено');
+    }, 500);
 }
 
 // Показать слайд
@@ -52,12 +64,27 @@ function showSlide(index) {
     currentSlide = index;
     const slide = tourData.slides[index];
     
+    console.log('Показываем слайд:', index);
+    
     // Обновляем визуальную часть
-    document.getElementById('mainImage').src = slide.image;
+    const mainImage = document.getElementById('mainImage');
+    mainImage.onload = function() {
+        console.log('Изображение загружено');
+    };
+    mainImage.onerror = function() {
+        console.error('Ошибка загрузки изображения');
+        this.src = 'https://via.placeholder.com/800x400/cccccc/666666?text=Изображение+не+загружено';
+    };
+    mainImage.src = slide.image;
+    
     document.getElementById('imageCaption').textContent = slide.caption;
     
     // Обновляем текст
     document.getElementById('dialogueText').textContent = slide.text;
+    
+    // Обновляем персонажа
+    document.getElementById('characterName').textContent = tourData.character.name;
+    document.getElementById('characterImage').src = tourData.character.image;
     
     // Обновляем прогресс
     updateProgress();
@@ -77,10 +104,7 @@ function setupSpeechSynthesis() {
         return;
     }
     
-    // Получаем доступные голоса (может потребоваться время для загрузки)
-    speechSynthesis.onvoiceschanged = function() {
-        console.log('Голоса загружены');
-    };
+    console.log('Web Speech API доступен');
 }
 
 // Озвучивание текста
@@ -96,38 +120,48 @@ function playSpeech() {
     if (isPlaying) return;
     
     const slide = tourData.slides[currentSlide];
-    const utterance = new SpeechSynthesisUtterance(slide.text);
     
-    // Настройки голоса
-    utterance.rate = 0.9; // Скорость
-    utterance.pitch = 1;  // Тон
-    utterance.volume = 1; // Громкость
-    
-    // Выбираем русский голос если доступен
-    const voices = speechSynthesis.getVoices();
-    const russianVoice = voices.find(voice => voice.lang.includes('ru'));
-    if (russianVoice) {
-        utterance.voice = russianVoice;
+    try {
+        const utterance = new SpeechSynthesisUtterance(slide.text);
+        
+        // Настройки голоса
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        
+        // Выбираем русский голос если доступен
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            const russianVoice = voices.find(voice => voice.lang.includes('ru'));
+            if (russianVoice) {
+                utterance.voice = russianVoice;
+            }
+        }
+        
+        utterance.onstart = function() {
+            isPlaying = true;
+            document.getElementById('playBtn').textContent = '⏸ Пауза';
+            console.log('Начало воспроизведения');
+        };
+        
+        utterance.onend = function() {
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Озвучить';
+            console.log('Воспроизведение завершено');
+        };
+        
+        utterance.onerror = function(event) {
+            console.error('Ошибка воспроизведения:', event);
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶ Озвучить';
+            // Не показываем алерт, чтобы не раздражать пользователя
+        };
+        
+        speechSynthesis.speak(utterance);
+    } catch (error) {
+        console.error('Ошибка при создании utterance:', error);
+        isPlaying = false;
     }
-    
-    utterance.onstart = function() {
-        isPlaying = true;
-        document.getElementById('playBtn').textContent = '⏸ Пауза';
-    };
-    
-    utterance.onend = function() {
-        isPlaying = false;
-        document.getElementById('playBtn').textContent = '▶ Озвучить';
-    };
-    
-    utterance.onerror = function(event) {
-        console.error('Ошибка воспроизведения:', event);
-        isPlaying = false;
-        document.getElementById('playBtn').textContent = '▶ Озвучить';
-        alert('Не удалось воспроизвести аудио. Проверьте поддержку браузером.');
-    };
-    
-    speechSynthesis.speak(utterance);
 }
 
 function pauseSpeech() {
@@ -139,7 +173,9 @@ function pauseSpeech() {
 }
 
 function stopSpeech() {
-    speechSynthesis.cancel();
+    if (speechSynthesis) {
+        speechSynthesis.cancel();
+    }
     isPlaying = false;
     document.getElementById('playBtn').textContent = '▶ Озвучить';
 }
@@ -150,11 +186,15 @@ function nextSlide() {
         showSlide(currentSlide + 1);
     } else {
         // Экскурсия завершена
-        tg.showPopup({
-            title: 'Экскурсия завершена',
-            message: 'Спасибо за участие! Надеемся, вам понравилось.',
-            buttons: [{ type: 'ok' }]
-        });
+        if (tg && tg.showPopup) {
+            tg.showPopup({
+                title: 'Экскурсия завершена',
+                message: 'Спасибо за участие! Надеемся, вам понравилось.',
+                buttons: [{ type: 'ok' }]
+            });
+        } else {
+            alert('Экскурсия завершена! Спасибо за участие!');
+        }
     }
 }
 
@@ -176,31 +216,14 @@ function updateProgress() {
         `${currentSlide + 1}/${tourData.slides.length}`;
 }
 
-// Обработчики клавиш для удобства
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'ArrowLeft') {
-        prevSlide();
-    } else if (event.key === 'ArrowRight') {
-        nextSlide();
-    } else if (event.key === ' ') {
-        event.preventDefault();
-        toggleSpeech();
-    }
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, запускаем инициализацию...');
+    initApp();
 });
 
-// Инициализация при загрузке
-window.addEventListener('load', initApp);
-
-// Интеграция с Telegram
-function sendTourProgress() {
-    // Отправляем прогресс обратно в бота
-    tg.sendData(JSON.stringify({
-        action: 'tour_progress',
-        current_slide: currentSlide,
-        total_slides: tourData.slides.length,
-        tour_title: tourData.title
-    }));
-}
-
-// Сохраняем прогресс при закрытии
-window.addEventListener('beforeunload', sendTourProgress);
+// Обработка ошибок
+window.addEventListener('error', function(event) {
+    console.error('Global error:', event.error);
+    document.getElementById('loading').classList.add('hidden');
+});
