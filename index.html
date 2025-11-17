@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Виртуальная экскурсия</title>
+    <title>Виртуальные экскурсии</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -16,8 +16,86 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #ffffff;
             color: #000000;
-            height: 100vh;
-            overflow: hidden;
+            padding: 20px;
+        }
+
+        /* Стили для главной страницы */
+        .home-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .tour-block {
+            aspect-ratio: 1; /* Делаем квадрат */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .tour-block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .tour-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .tour-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .tour-duration {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Разные цвета для блоков */
+        .tour-block:nth-child(1) { background: linear-gradient(135deg, #FF6B6B, #FF8E8E); }
+        .tour-block:nth-child(2) { background: linear-gradient(135deg, #4ECDC4, #88D3CE); }
+        .tour-block:nth-child(3) { background: linear-gradient(135deg, #45B7D1, #7BC8E0); }
+        .tour-block:nth-child(4) { background: linear-gradient(135deg, #96CEB4, #B8E0C8); }
+        .tour-block:nth-child(5) { background: linear-gradient(135deg, #FFEAA7, #FFEFBD); color: #333; }
+        .tour-block:nth-child(6) { background: linear-gradient(135deg, #DDA0DD, #E6B8E6); }
+
+        /* Стили для страницы экскурсии (изначально скрыта) */
+        .tour-page {
+            display: none;
         }
 
         .app-container {
@@ -26,7 +104,6 @@
             height: 100vh;
         }
 
-        /* Визуальный контейнер */
         .visual-container {
             flex: 0 0 60vh;
             position: relative;
@@ -71,6 +148,20 @@
 
         .next-btn {
             right: 10px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 10;
         }
 
         /* Контейнер диалога */
@@ -189,74 +280,280 @@
         .loading.show {
             display: flex;
         }
+
+        /* Адаптивность */
+        @media (max-width: 480px) {
+            .grid-container {
+                gap: 10px;
+            }
+            
+            .tour-block {
+                padding: 10px;
+            }
+            
+            .tour-title {
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="visual-container">
-            <img id="mainImage" src="https://via.placeholder.com/800x400/ff6b6b/ffffff?text=Площадь+города" alt="Экскурсионное изображение">
-            <div class="image-caption" id="imageCaption">Главная площадь</div>
-            <button class="nav-btn prev-btn" onclick="prevSlide()">‹</button>
-            <button class="nav-btn next-btn" onclick="nextSlide()">›</button>
+    <!-- Главная страница -->
+    <div id="homePage" class="home-container">
+        <div class="header">
+            <h1>🚀 Виртуальные экскурсии</h1>
+            <p>Выберите интересующую вас экскурсию</p>
         </div>
 
-        <div class="dialogue-container">
-            <div class="character-section">
-                <img class="character" src="https://via.placeholder.com/150/0088cc/ffffff?text=Гид" alt="Персонаж">
-                <div class="character-name">Гид-экскурсовод</div>
+        <div class="grid-container">
+            <!-- Блоки экскурсий -->
+            <div class="tour-block" onclick="openTour('history')">
+                <div class="tour-icon">🏛️</div>
+                <div class="tour-title">Исторический центр</div>
+                <div class="tour-duration">45 мин</div>
             </div>
 
-            <div class="text-section">
-                <div class="text-content" id="dialogueText">
-                    Добро пожаловать на нашу экскурсию! Это главная площадь нашего города.
-                </div>
-                <div class="controls">
-                    <button onclick="toggleSpeech()">▶ Озвучить</button>
-                    <button onclick="pauseSpeech()">⏸ Пауза</button>
-                    <button onclick="nextSlide()">Далее →</button>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 33%"></div>
-                    </div>
-                    <span class="progress-text">1/3</span>
-                </div>
+            <div class="tour-block" onclick="openTour('architecture')">
+                <div class="tour-icon">🏰</div>
+                <div class="tour-title">Архитектура</div>
+                <div class="tour-duration">60 мин</div>
+            </div>
+
+            <div class="tour-block" onclick="openTour('museums')">
+                <div class="tour-icon">🖼️</div>
+                <div class="tour-title">Музеи города</div>
+                <div class="tour-duration">90 мин</div>
+            </div>
+
+            <div class="tour-block" onclick="openTour('parks')">
+                <div class="tour-icon">🌳</div>
+                <div class="tour-title">Парки и сады</div>
+                <div class="tour-duration">30 мин</div>
+            </div>
+
+            <div class="tour-block" onclick="openTour('modern')">
+                <div class="tour-icon">🏢</div>
+                <div class="tour-title">Современность</div>
+                <div class="tour-duration">40 мин</div>
+            </div>
+
+            <div class="tour-block" onclick="openTour('secret')">
+                <div class="tour-icon">🔍</div>
+                <div class="tour-title">Секретные места</div>
+                <div class="tour-duration">75 мин</div>
             </div>
         </div>
-
-        <div class="loading" id="loading">Загрузка...</div>
     </div>
 
-    <script>
-        // Упрощенные данные экскурсии
-        const tourData = [
-            {
-                image: "https://via.placeholder.com/800x400/ff6b6b/ffffff?text=Площадь+города",
-                caption: "Главная площадь",
-                text: "Добро пожаловать на нашу экскурсию! Это главная площадь нашего города."
-            },
-            {
-                image: "https://via.placeholder.com/800x400/4ecdc4/ffffff?text=Исторический+собор", 
-                caption: "Старинный собор",
-                text: "Перед вами великолепный собор, построенный в 18 веке в стиле барокко."
-            },
-            {
-                image: "https://via.placeholder.com/800x400/45b7d1/ffffff?text=Городская+набережная",
-                caption: "Речная набережная",
-                text: "А это наша красивая набережная, где любят гулять жители и гости города."
-            }
-        ];
+    <!-- Страница экскурсии (изначально скрыта) -->
+    <div id="tourPage" class="tour-page">
+        <div class="app-container">
+            <div class="visual-container">
+                <button class="back-btn" onclick="goBackToHome()">←</button>
+                <img id="mainImage" src="" alt="Экскурсионное изображение">
+                <div class="image-caption" id="imageCaption"></div>
+                <button class="nav-btn prev-btn" onclick="prevSlide()">‹</button>
+                <button class="nav-btn next-btn" onclick="nextSlide()">›</button>
+            </div>
 
+            <div class="dialogue-container">
+                <div class="character-section">
+                    <img class="character" id="characterImage" src="https://via.placeholder.com/150/0088cc/ffffff?text=Гид" alt="Персонаж">
+                    <div class="character-name" id="characterName">Гид-экскурсовод</div>
+                </div>
+
+                <div class="text-section">
+                    <div class="text-content" id="dialogueText"></div>
+                    <div class="controls">
+                        <button id="playBtn" onclick="toggleSpeech()">▶ Озвучить</button>
+                        <button onclick="pauseSpeech()">⏸ Пауза</button>
+                        <button onclick="nextSlide()">Далее →</button>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <span class="progress-text" id="progressText">1/3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">Загрузка...</div>
+
+    <script>
+        // 📊 БАЗА ДАННЫХ ВСЕХ ЭКСКУРСИЙ
+        const toursDatabase = {
+            'history': {
+                title: "Исторический центр",
+                character: {
+                    name: "Историк Алексей",
+                    image: "https://via.placeholder.com/150/0088cc/ffffff?text=Алексей"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/ff6b6b/ffffff?text=Главная+площадь",
+                        caption: "Центральная площадь",
+                        text: "Добро пожаловать в исторический центр! Эта площадь была заложена в 18 веке и служила главным торговым местом города."
+                    },
+                    {
+                        image: "https://via.placeholder.com/800x400/4ecdc4/ffffff?text=Старинный+собор", 
+                        caption: "Кафедральный собор",
+                        text: "Перед вами величественный собор, построенный в 1754 году. Его высота составляет 65 метров - это самое высокое здание старого города."
+                    },
+                    {
+                        image: "https://via.placeholder.com/800x400/45b7d1/ffffff?text=Городская+ратуша",
+                        caption: "Здание ратуши",
+                        text: "А это городская ратуша, где на протяжении веков принимались важнейшие решения, определявшие судьбу нашего города."
+                    }
+                ]
+            },
+            'architecture': {
+                title: "Архитектурные шедевры",
+                character: {
+                    name: "Архитектор Мария",
+                    image: "https://via.placeholder.com/150/ff6b6b/ffffff?text=Мария"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/96CEB4/ffffff?text=Барокко",
+                        caption: "Стиль барокко",
+                        text: "Это здание - прекрасный пример барокко с его пышными формами и богатым декором. Обратите внимание на изогнутые линии!"
+                    },
+                    {
+                        image: "https://via.placeholder.com/800x400/FFEAA7/333333?text=Классицизм", 
+                        caption: "Эпоха классицизма",
+                        text: "Перед вами здание в стиле классицизма - строгие пропорции, симметрия и сдержанность форм характеризуют эту эпоху."
+                    }
+                ]
+            },
+            'museums': {
+                title: "Музеи города",
+                character: {
+                    name: "Искусствовед Анна",
+                    image: "https://via.placeholder.com/150/96CEB4/ffffff?text=Анна"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/DDA0DD/ffffff?text=Художественный",
+                        caption: "Художественный музей",
+                        text: "Добро пожаловать в наш художественный музей! Здесь собрана уникальная коллекция картин русских и европейских мастеров."
+                    }
+                ]
+            },
+            'parks': {
+                title: "Парки и сады",
+                character: {
+                    name: "Садовник Петр",
+                    image: "https://via.placeholder.com/150/4ECDC4/ffffff?text=Петр"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/96CEB4/ffffff?text=Центральный+парк",
+                        caption: "Центральный парк",
+                        text: "Этот парк был разбит в 19 веке и до сих пор остается любимым местом отдыха горожан. Здесь произрастает более 100 видов растений."
+                    }
+                ]
+            },
+            'modern': {
+                title: "Современная архитектура",
+                character: {
+                    name: "Дизайнер Сергей",
+                    image: "https://via.placeholder.com/150/45B7D1/ffffff?text=Сергей"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/667eea/ffffff?text=Небоскреб",
+                        caption: "Деловой центр",
+                        text: "Этот небоскреб был построен в 2018 году и стал символом современного развития нашего города. Его высота - 150 метров!"
+                    }
+                ]
+            },
+            'secret': {
+                title: "Секретные места",
+                character: {
+                    name: "Краевед Ирина",
+                    image: "https://via.placeholder.com/150/DDA0DD/ffffff?text=Ирина"
+                },
+                slides: [
+                    {
+                        image: "https://via.placeholder.com/800x400/764ba2/ffffff?text=Тайный+двор",
+                        caption: "Скрытый дворик",
+                        text: "Это место знают только местные жители! Здесь сохранилась уникальная атмосфера старого города, не тронутого временем."
+                    }
+                ]
+            }
+        };
+
+        // 🎮 ПЕРЕМЕННЫЕ ДЛЯ УПРАВЛЕНИЯ
+        let currentTour = null;
         let currentSlide = 0;
         let isPlaying = false;
         let speech = null;
 
-        // Функция для показа слайда
+        // 🏠 ФУНКЦИИ ГЛАВНОЙ СТРАНИЦЫ
+        function openTour(tourId) {
+            console.log('Открываем экскурсию:', tourId);
+            
+            // Показываем индикатор загрузки
+            document.getElementById('loading').classList.add('show');
+            
+            setTimeout(() => {
+                // Сохраняем выбранную экскурсию
+                currentTour = tourId;
+                
+                // Переключаем страницы
+                document.getElementById('homePage').style.display = 'none';
+                document.getElementById('tourPage').style.display = 'block';
+                
+                // Загружаем экскурсию
+                loadTour(tourId);
+                
+                // Скрываем индикатор загрузки
+                document.getElementById('loading').classList.remove('show');
+            }, 500);
+        }
+
+        function goBackToHome() {
+            // Останавливаем воспроизведение
+            stopSpeech();
+            
+            // Переключаем страницы
+            document.getElementById('tourPage').style.display = 'none';
+            document.getElementById('homePage').style.display = 'block';
+            
+            // Сбрасываем состояние
+            currentTour = null;
+            currentSlide = 0;
+        }
+
+        // 🎯 ФУНКЦИИ ЭКСКУРСИИ
+        function loadTour(tourId) {
+            const tour = toursDatabase[tourId];
+            if (!tour) {
+                alert('Экскурсия не найдена!');
+                goBackToHome();
+                return;
+            }
+            
+            // Обновляем заголовок страницы
+            document.title = tour.title;
+            
+            // Обновляем персонажа
+            document.getElementById('characterName').textContent = tour.character.name;
+            document.getElementById('characterImage').src = tour.character.image;
+            
+            // Показываем первый слайд
+            showSlide(0);
+        }
+
         function showSlide(index) {
-            if (index < 0 || index >= tourData.length) return;
+            const tour = toursDatabase[currentTour];
+            if (!tour || index < 0 || index >= tour.slides.length) return;
             
             currentSlide = index;
-            const slide = tourData[index];
+            const slide = tour.slides[index];
             
             // Обновляем содержимое
             document.getElementById('mainImage').src = slide.image;
@@ -264,30 +561,21 @@
             document.getElementById('dialogueText').textContent = slide.text;
             
             // Обновляем прогресс
-            const progress = ((currentSlide + 1) / tourData.length) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.querySelector('.progress-text').textContent = (currentSlide + 1) + '/' + tourData.length;
+            updateProgress();
             
-            // Останавливаем воспроизведение при смене слайда
+            // Останавливаем воспроизведение
             stopSpeech();
         }
 
-        // Навигация
-        function nextSlide() {
-            if (currentSlide < tourData.length - 1) {
-                showSlide(currentSlide + 1);
-            } else {
-                alert('Экскурсия завершена! Спасибо за участие!');
-            }
+        function updateProgress() {
+            const tour = toursDatabase[currentTour];
+            const progress = ((currentSlide + 1) / tour.slides.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = 
+                (currentSlide + 1) + '/' + tour.slides.length;
         }
 
-        function prevSlide() {
-            if (currentSlide > 0) {
-                showSlide(currentSlide - 1);
-            }
-        }
-
-        // Функции озвучки
+        // 🎤 СИСТЕМА ОЗВУЧКИ
         function toggleSpeech() {
             if (isPlaying) {
                 pauseSpeech();
@@ -299,9 +587,9 @@
         function playSpeech() {
             if (isPlaying) return;
             
-            const text = tourData[currentSlide].text;
+            const tour = toursDatabase[currentTour];
+            const text = tour.slides[currentSlide].text;
             
-            // Проверяем поддержку Web Speech API
             if (!window.speechSynthesis) {
                 alert('Озвучка не поддерживается вашим браузером');
                 return;
@@ -313,14 +601,17 @@
             
             speech.onstart = function() {
                 isPlaying = true;
+                document.getElementById('playBtn').textContent = '⏸ Пауза';
             };
             
             speech.onend = function() {
                 isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Озвучить';
             };
             
             speech.onerror = function() {
                 isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Озвучить';
                 alert('Ошибка при озвучке');
             };
             
@@ -331,6 +622,7 @@
             if (window.speechSynthesis && isPlaying) {
                 window.speechSynthesis.pause();
                 isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Продолжить';
             }
         }
 
@@ -338,15 +630,30 @@
             if (window.speechSynthesis) {
                 window.speechSynthesis.cancel();
                 isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Озвучить';
             }
         }
 
-        // Инициализация при загрузке страницы
+        // ◀️ ▶️ НАВИГАЦИЯ
+        function nextSlide() {
+            const tour = toursDatabase[currentTour];
+            if (currentSlide < tour.slides.length - 1) {
+                showSlide(currentSlide + 1);
+            } else {
+                alert('Экскурсия завершена! Возвращаемся на главную.');
+                goBackToHome();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        // 🚀 ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Страница загружена');
-            
-            // Сразу скрываем индикатор загрузки
-            document.getElementById('loading').classList.remove('show');
+            console.log('Приложение загружено!');
             
             // Инициализируем Telegram Web App если он доступен
             if (window.Telegram && window.Telegram.WebApp) {
@@ -354,11 +661,12 @@
                 window.Telegram.WebApp.expand();
             }
             
-            // Показываем первый слайд
-            showSlide(0);
+            // Показываем главную страницу
+            document.getElementById('homePage').style.display = 'block';
+            document.getElementById('tourPage').style.display = 'none';
         });
 
-        // Обработка ошибок
+        // 🛟 ОБРАБОТКА ОШИБОК
         window.addEventListener('error', function() {
             document.getElementById('loading').classList.remove('show');
         });
